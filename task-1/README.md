@@ -32,7 +32,13 @@ The following core libraries are integrated to power this automation:
    playwright install
    ```
 
-3. **Execute the Application:**
+3. **Create the Reporting Directory:**
+   In order to store the exported price-change snapshots, manually create the `reports/` folder at the project root first:
+   ```bash
+   mkdir reports
+   ```
+
+4. **Execute the Application:**
    Run the orchestrator file to trigger the extraction pipeline:
    ```bash
    python main.py

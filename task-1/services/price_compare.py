@@ -26,10 +26,12 @@ def get_price_changes(today, yesterday):
     print(f"[DEBUG] Found {len(rows)} matching products across dates")
 
     changes = []
+    count_changes = 0
 
     for name, old, new in rows:
         if old != new:
             change = ((new - old) / old) * 100
             changes.append((name, old, new, round(change, 2)))
+            count_changes += 1
 
-    return changes
+    return changes, count_changes

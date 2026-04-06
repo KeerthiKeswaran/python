@@ -45,20 +45,14 @@ def run():
     print(f"[INFO] Total: {len(all_products)} products saved to DB")
 
     # Compare prices
-    changes = get_price_changes(str(today), str(yesterday))
+    changes, count_changes = get_price_changes(str(today), str(yesterday))
 
     # Generate report
     report_file = f"reports/{today}.csv"
     generate_report(changes, report_file)
 
     print("\n=== Price Change Report ===")
-    actual_changes_count = 0
-    for name, old, new, change in changes:
-        if old != new:
-            actual_changes_count += 1
-        print(f"{name[:40]} | {old} → {new} | {change}%")
-
-    print(f"\n{actual_changes_count} price changes detected.")
+    print(f"\n{count_changes} price changes detected.")
     print(f"[DONE] Report saved to {report_file}")
 
 

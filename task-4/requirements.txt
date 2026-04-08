@@ -1,0 +1,3 @@
+# Task 4: Distributed Job Queue System
+# No external dependencies are required.
+# The project uses built-in modules: multiprocessing, pickle, sqlite3, time, uuid, and random.

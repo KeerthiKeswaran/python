@@ -4,7 +4,8 @@ import aiohttp
 import time
 import json
 import re
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
+from urllib.robotparser import RobotFileParser
 from mock import MockSession
 
 class WebCrawler:
@@ -17,10 +18,17 @@ class WebCrawler:
         self.graph = {}
         self.errors = []
         self.redirects = []
+        self.skipped_robots = []
+        self.duplicates_count = 0
+        self.robots_parser = RobotFileParser()
         self.start_time = time.time()
 
     async def crawl(self):
         print(f"[INFO] Seed: {self.seed_url}")
+        
+        # Load robots.txt
+        await self.load_robots()
+        
         print(f"[INFO] Max depth: {self.max_depth} | Concurrency: {self.concurrency} | Respecting robots.txt: YES")
         
         queue = [(self.seed_url, 0)]
@@ -32,15 +40,43 @@ class WebCrawler:
             
             tasks = []
             for url, depth in current_level:
-                if url not in self.visited and depth <= self.max_depth:
-                    self.visited.add(url)
-                    tasks.append(self.fetch(url, depth))
+                if url in self.visited:
+                    self.duplicates_count += 1
+                    continue
+                
+                if depth > self.max_depth:
+                    continue
+
+                if not self.is_allowed(url):
+                    print(f"[SKIPPED] {url} (robots.txt)")
+                    self.skipped_robots.append(url)
+                    continue
+
+                self.visited.add(url)
+                tasks.append(self.fetch(url, depth))
             
             level_results = await asyncio.gather(*tasks)
             for new_links in level_results:
-                queue.extend(new_links)
+                if new_links:
+                    queue.extend(new_links)
         
+        self.generate_json_report()
         self.report()
+
+    async def load_robots(self):
+        parsed_url = urlparse(self.seed_url)
+        robots_url = f"{parsed_url.scheme}://{parsed_url.netloc}/robots.txt"
+        session = MockSession()
+        resp = session.get(robots_url)
+        if resp.status == 200:
+            content = await resp.text()
+            self.robots_parser.parse(content.splitlines())
+            print(f"[INFO] Robots.txt loaded from {robots_url}")
+        else:
+            print(f"[WARNING] Could not find robots.txt at {robots_url}")
+
+    def is_allowed(self, url):
+        return self.robots_parser.can_fetch("*", url)
 
     async def fetch(self, url, depth):
         session = MockSession()
@@ -68,31 +104,54 @@ class WebCrawler:
 
     def extract_links(self, base_url, html):
         links = re.findall(r'href=["\'](.*?)["\']', html)
-        return [urljoin(base_url, l) for l in links if not l.startswith("#")]
+        normalized = []
+        for l in links:
+            if l.startswith("#"): continue
+            joined = urljoin(base_url, l)
+            if joined.endswith("/") and len(joined) > 8: # Keep https://
+                joined = joined[:-1]
+            normalized.append(joined)
+        return normalized
 
     def report(self):
         duration = time.time() - self.start_time
         print(f"\n=== Crawl Complete ({duration:.1f}s) ===")
         print(f"Pages crawled: {len(self.visited)}")
-        print(f"Unique URLs found: {len(self.visited) + len(self.errors)}")
-        print(f"Skipped (robots): 12")
-        print(f"Duplicates avoided: 56")
+        print(f"Unique URLs found: {len(self.visited) + len(self.errors) + len(self.skipped_robots)}")
+        print(f"Skipped (robots): {len(self.skipped_robots)}")
+        print(f"Duplicates avoided: {self.duplicates_count}")
         
-        print(f"\n=== SEO Audit Report ===")
-        print(f"Broken Links (404):")
-        print(f" - /careers (linked from: /about, /footer)")
-        print(f" - /team/john (linked from: /about)")
+        if self.errors:
+            print(f"\n=== SEO Audit Report ===")
+            print(f"Broken Links (404):")
+            for err in self.errors:
+                print(f" - {err}")
         
-        print(f"\nRedirect Chains (301/302):")
-        print(f" - /old-promo -> /products (1 hop)")
-        print(f" - /legacy/api -> /v1/api -> /v2/api (2 hops - consider fixing)")
+        if self.redirects:
+            print(f"\nRedirect Chains (301/302):")
+            for src, dest in self.redirects:
+                print(f" - {src} -> {dest}")
         
-        print(f"\nOrphan Pages (no inbound links):")
-        print(f" - /products/widget-legacy")
-        print(f" - /blog/draft-post-test")
-        
-        os.makedirs("output", exist_ok=True)
-        with open("output/crawl_graph.json", "w") as f:
-            json.dump(self.graph, f)
         print(f"\nCrawl graph saved to: output/crawl_graph.json")
-        print(f"Site map saved to: output/sitemap.xml")
+        print(f"Full report saved to: output/crawl_report.json")
+
+    def generate_json_report(self):
+        os.makedirs("output", exist_ok=True)
+        report_data = {
+            "summary": {
+                "total_crawled": len(self.visited),
+                "total_errors": len(self.errors),
+                "total_skipped_robots": len(self.skipped_robots),
+                "total_duplicates": self.duplicates_count,
+                "duration_seconds": time.time() - self.start_time
+            },
+            "graph": self.graph,
+            "errors": self.errors,
+            "redirects": [{"from": r[0], "to": r[1]} for r in self.redirects],
+            "skipped_robots": self.skipped_robots
+        }
+        with open("output/crawl_report.json", "w") as f:
+            json.dump(report_data, f, indent=4)
+        
+        with open("output/crawl_graph.json", "w") as f:
+            json.dump(self.graph, f, indent=4)

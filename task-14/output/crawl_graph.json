@@ -1,0 +1,30 @@
+{
+    "https://example.com": [
+        "https://example.com/about",
+        "https://example.com/products",
+        "https://example.com/blog",
+        "https://example.com/admin"
+    ],
+    "https://example.com/about": [
+        "https://example.com/team/john",
+        "https://example.com/careers",
+        "https://example.com"
+    ],
+    "https://example.com/products": [
+        "https://example.com/products/widget-pro",
+        "https://example.com/old-promo"
+    ],
+    "https://example.com/blog": [
+        "https://example.com/blog/post-1"
+    ],
+    "https://example.com/products/widget-pro": [
+        "https://example.com/blog"
+    ],
+    "https://example.com/blog/post-1": [
+        "https://example.com/blog/post-1/comments"
+    ],
+    "https://example.com/blog/post-1/comments": [
+        "https://example.com/about",
+        "https://example.com/products"
+    ]
+}

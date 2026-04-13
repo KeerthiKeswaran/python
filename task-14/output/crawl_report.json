@@ -1,0 +1,52 @@
+{
+    "summary": {
+        "total_crawled": 10,
+        "total_errors": 2,
+        "total_skipped_robots": 1,
+        "total_duplicates": 4,
+        "duration_seconds": 0.006173133850097656
+    },
+    "graph": {
+        "https://example.com": [
+            "https://example.com/about",
+            "https://example.com/products",
+            "https://example.com/blog",
+            "https://example.com/admin"
+        ],
+        "https://example.com/about": [
+            "https://example.com/team/john",
+            "https://example.com/careers",
+            "https://example.com"
+        ],
+        "https://example.com/products": [
+            "https://example.com/products/widget-pro",
+            "https://example.com/old-promo"
+        ],
+        "https://example.com/blog": [
+            "https://example.com/blog/post-1"
+        ],
+        "https://example.com/products/widget-pro": [
+            "https://example.com/blog"
+        ],
+        "https://example.com/blog/post-1": [
+            "https://example.com/blog/post-1/comments"
+        ],
+        "https://example.com/blog/post-1/comments": [
+            "https://example.com/about",
+            "https://example.com/products"
+        ]
+    },
+    "errors": [
+        "https://example.com/team/john",
+        "https://example.com/careers"
+    ],
+    "redirects": [
+        {
+            "from": "https://example.com/old-promo",
+            "to": "https://example.com/products"
+        }
+    ],
+    "skipped_robots": [
+        "https://example.com/admin"
+    ]
+}

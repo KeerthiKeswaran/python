@@ -116,7 +116,7 @@ function connect() {
             if (ind) {
                 ind.style.display = "block";
                 const timeStr = getTimeString();
-                ind.innerHTML = `<span class="timestamp">${timeStr}</span> ${data.sender} is typing private message...`;
+                ind.innerHTML = `<span class="timestamp">${timeStr}</span>Typing...`;
                 
                 clearTimeout(dmTypingTimeout);
                 dmTypingTimeout = setTimeout(() => {
